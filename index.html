@@ -89,6 +89,11 @@
         <div>
             <h1 class="text-3xl font-bold text-indigo-400">體智動畫產生器</h1>
             <p class="text-gray-400 mt-1">上傳圖片，設定參數，立即預覽動畫！</p>
+            <p class="text-sm text-gray-400 mt-2">
+                設計者：<a href="https://www.facebook.com/chungmenghsiu" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">鍾孟修 職能治療師</a>
+                <br>
+                新書：<a href="https://www.books.com.tw/products/0011022363?sloc=main" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">讓你健康不失智的體智能</a>
+            </p>
         </div>
 
         <!-- 步驟一：任務 -->
@@ -156,6 +161,27 @@
             🚀 開始產生動畫
         </button>
         
+        <!-- 參考影片 -->
+        <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2 text-center">參考影片</label>
+            <div class="w-full aspect-video rounded-lg overflow-hidden shadow-lg">
+                 <iframe 
+                    class="w-full h-full" 
+                    src="https://www.youtube.com/embed/1kehqCLudyg" 
+                    title="YouTube video player" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                    allowfullscreen>
+                </iframe>
+            </div>
+            <p class="text-center text-xs text-gray-400 mt-2">
+                若影片無法播放，請
+                <a href="https://www.youtube.com/watch?v=1kehqCLudyg" target="_blank" rel="noopener noreferrer" class="text-indigo-400 hover:underline">
+                    點此在新分頁觀看
+                </a>
+            </p>
+        </div>
+
         <!-- 錯誤訊息提示 -->
         <div id="errorMessage" class="text-red-400 text-center text-sm h-5"></div>
 
@@ -271,31 +297,44 @@
             }
         }
         
-        // --- 全螢幕功能 ---
-        fullscreenButton.addEventListener('click', () => {
-            // 檢查當前是否已在全螢幕模式
-            if (!document.fullscreenElement) {
-                // 進入全螢幕
-                previewPanel.requestFullscreen().catch(err => {
-                    alert(`無法進入全螢幕模式: ${err.message} (${err.name})`);
-                });
+        // --- 全螢幕功能 (強化相容性) ---
+        function isFullScreen() {
+            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+        }
+
+        function toggleFullScreen() {
+            if (!isFullScreen()) {
+                // 嘗試進入全螢幕
+                const requestMethod = previewPanel.requestFullscreen || previewPanel.webkitRequestFullscreen || previewPanel.mozRequestFullScreen || previewPanel.msRequestFullscreen;
+                if (requestMethod) {
+                    requestMethod.call(previewPanel).catch(err => {
+                        errorMessage.textContent = `無法進入全螢幕模式`;
+                    });
+                }
             } else {
-                // 退出全螢幕
-                document.exitFullscreen();
+                // 嘗試退出全螢幕
+                const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+                if (exitMethod) {
+                    exitMethod.call(document);
+                }
             }
-        });
+        }
+
+        fullscreenButton.addEventListener('click', toggleFullScreen);
 
         // 監聽全螢幕狀態變化，以更新按鈕圖示
-        document.addEventListener('fullscreenchange', () => {
-            if (document.fullscreenElement) {
-                // 進入全螢幕，顯示「退出」圖示
-                fullscreenIconOpen.classList.add('hidden');
-                fullscreenIconClose.classList.remove('hidden');
-            } else {
-                // 退出全螢幕，顯示「進入」圖示
-                fullscreenIconOpen.classList.remove('hidden');
-                fullscreenIconClose.classList.add('hidden');
-            }
+        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(event => {
+            document.addEventListener(event, () => {
+                if (isFullScreen()) {
+                    // 進入全螢幕，顯示「退出」圖示
+                    fullscreenIconOpen.classList.add('hidden');
+                    fullscreenIconClose.classList.remove('hidden');
+                } else {
+                    // 退出全螢幕，顯示「進入」圖示
+                    fullscreenIconOpen.classList.remove('hidden');
+                    fullscreenIconClose.classList.add('hidden');
+                }
+            });
         });
 
     </script>
