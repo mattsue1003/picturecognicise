@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>體智動畫產生器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        /* 使用 Noto Sans TC 作為中文字體，Inter 作為英文字體 */
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* 預定義的動畫效果 */
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
+        }
+        @keyframes fadeOut {
+            0% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes slideInLeft {
+            0% { transform: translateX(-100%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes zoomIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes bounceIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* 將動畫應用於 class */
+        .anim-fadeInOut { animation-name: fadeInOut; }
+        .anim-slideInLeft { animation-name: slideInLeft; }
+        .anim-zoomIn { animation-name: zoomIn; }
+        .anim-bounceIn { animation-name: bounceIn; }
+        
+        /* 動畫畫布中的圖片樣式 */
+        #animationCanvas img {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* 確保圖片完整顯示且不變形 */
+            animation-timing-function: ease-in-out;
+            animation-fill-mode: forwards;
+        }
+        
+        /* 美化檔案上傳按鈕 */
+        input[type="file"]::file-selector-button {
+            @apply bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg cursor-pointer transition-colors duration-300 hover:bg-indigo-700;
+        }
+        
+        /* 全螢幕按鈕樣式 */
+        #fullscreenButton {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            z-index: 20;
+            background-color: rgba(0, 0, 0, 0.4);
+            border-radius: 9999px;
+            padding: 0.5rem;
+            color: white;
+            transition: background-color 0.2s;
+        }
+        #fullscreenButton:hover {
+            background-color: rgba(0, 0, 0, 0.6);
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
+
+    <main class="w-full max-w-xl bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-8 flex flex-col gap-6">
+        
+        <!-- 標題區 -->
+        <div>
+            <h1 class="text-3xl font-bold text-indigo-400">體智動畫產生器</h1>
+            <p class="text-gray-400 mt-1">上傳圖片，設定參數，立即預覽動畫！</p>
+        </div>
+
+        <!-- 步驟一：任務 -->
+        <div>
+            <label for="titleInput" class="block text-sm font-medium text-gray-300 mb-1">1. 體智動畫任務</label>
+            <input type="text" id="titleInput" placeholder="例如：看到蔬菜就拍手＋深蹲" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+        </div>
+
+        <!-- 預覽區域 -->
+        <div id="previewPanel" class="preview-panel bg-gray-900 rounded-lg flex flex-col items-center justify-center p-4 aspect-video overflow-hidden relative">
+            <button id="fullscreenButton" title="全螢幕播放">
+                <svg id="fullscreenIconOpen" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-arrows-fullscreen" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M5.828 10.172a.5.5 0 0 0-.707 0l-4.096 4.096V11.5a.5.5 0 0 0-1 0v3.975a.5.5 0 0 0 .5.5H4.5a.5.5 0 0 0 0-1H1.732l4.096-4.096a.5.5 0 0 0 0-.707zm4.344 0a.5.5 0 0 1 .707 0l4.096 4.096V11.5a.5.5 0 1 1 1 0v3.975a.5.5 0 0 1-.5.5H11.5a.5.5 0 0 1 0-1h2.768l-4.096-4.096a.5.5 0 0 1 0-.707zm0-4.344a.5.5 0 0 0 .707 0l4.096-4.096V4.5a.5.5 0 1 0 1 0V.525a.5.5 0 0 0-.5-.5H11.5a.5.5 0 0 0 0 1h2.768l-4.096 4.096a.5.5 0 0 0 0 .707zm-4.344 0a.5.5 0 0 1-.707 0L1.025 1.732V4.5a.5.5 0 0 1-1 0V.525a.5.5 0 0 1 .5-.5H4.5a.5.5 0 0 1 0 1H1.732l4.096 4.096a.5.5 0 0 1 0 .707z"/>
+                </svg>
+                <svg id="fullscreenIconClose" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-fullscreen-exit hidden" viewBox="0 0 16 16">
+                    <path d="M5.5 0a.5.5 0 0 1 .5.5v4A.5.5 0 0 1 5 5h-4a.5.5 0 0 1 0-1h3.5V.5a.5.5 0 0 1 .5-.5zm-5 10.5a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1H1.5v3.5a.5.5 0 0 1-1 0v-4zM10 .5a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5zM10.5 10a.5.5 0 0 1 .5.5v3.5h3.5a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5v-4a.5.5 0 0 1 .5-.5z"/>
+                </svg>
+            </button>
+            <div id="previewContainer" class="w-full h-full flex flex-col items-center justify-center">
+                <h2 id="animationTitle" class="text-2xl font-bold mb-4 absolute top-5 z-10 text-shadow"></h2>
+                <div id="animationCanvas" class="w-full h-full relative">
+                    <div id="placeholder" class="w-full h-full flex flex-col items-center justify-center text-gray-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="currentColor" class="bi bi-image" viewBox="0 0 16 16">
+                            <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/>
+                            <path d="M2.002 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2h-12zm12 1a1 1 0 0 1 1 1v6.5l-3.777-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12V3a1 1 0 0 1 1-1h12z"/>
+                        </svg>
+                        <p class="mt-2">動畫預覽區域</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 步驟二：動畫動作 -->
+        <div>
+            <label for="animationType" class="block text-sm font-medium text-gray-300 mb-1">2. 動畫動作</label>
+            <select id="animationType" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                <option value="fadeInOut">淡入淡出</option>
+                <option value="slideInLeft">由左滑入</option>
+                <option value="zoomIn">放大</option>
+                <option value="bounceIn">彈跳進入</option>
+            </select>
+        </div>
+
+        <!-- 步驟三：上傳圖片 -->
+        <div>
+            <label for="imageUpload" class="block text-sm font-medium text-gray-300 mb-1">3. 批次上傳圖片 (可多選)</label>
+            <input type="file" id="imageUpload" multiple accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:border-0">
+            <p id="imageCount" class="text-xs text-gray-500 mt-1 h-4"></p>
+        </div>
+        
+        <!-- 步驟四 & 五：時間設定 -->
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label for="durationInput" class="block text-sm font-medium text-gray-300 mb-1">4. 動畫秒數</label>
+                <input type="number" id="durationInput" value="1.5" min="0.1" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+            </div>
+             <div>
+                <label for="intervalInput" class="block text-sm font-medium text-gray-300 mb-1">5. 圖片間隔秒數</label>
+                <input type="number" id="intervalInput" value="2.5" min="0.1" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+            </div>
+        </div>
+
+        <!-- 產生按鈕 -->
+        <button id="startButton" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-lg transition-transform duration-200 active:scale-95 shadow-lg">
+            🚀 開始產生動畫
+        </button>
+        
+        <!-- 錯誤訊息提示 -->
+        <div id="errorMessage" class="text-red-400 text-center text-sm h-5"></div>
+
+    </main>
+
+    <script>
+        // DOM 元素獲取
+        const titleInput = document.getElementById('titleInput');
+        const imageUpload = document.getElementById('imageUpload');
+        const imageCount = document.getElementById('imageCount');
+        const animationTypeSelect = document.getElementById('animationType');
+        const durationInput = document.getElementById('durationInput');
+        const intervalInput = document.getElementById('intervalInput');
+        const startButton = document.getElementById('startButton');
+        const errorMessage = document.getElementById('errorMessage');
+        const animationTitle = document.getElementById('animationTitle');
+        const animationCanvas = document.getElementById('animationCanvas');
+        const placeholder = document.getElementById('placeholder');
+        const previewPanel = document.getElementById('previewPanel');
+        const fullscreenButton = document.getElementById('fullscreenButton');
+        const fullscreenIconOpen = document.getElementById('fullscreenIconOpen');
+        const fullscreenIconClose = document.getElementById('fullscreenIconClose');
+
+        let uploadedImages = [];
+        let animationIntervalId = null; // 用於存放計時器ID，方便清除
+
+        // 監聽圖片上傳事件
+        imageUpload.addEventListener('change', (event) => {
+            uploadedImages = []; // 清空舊的圖片
+            const files = event.target.files;
+            if (files.length > 0) {
+                imageCount.textContent = `已選取 ${files.length} 張圖片。`;
+                errorMessage.textContent = ''; // 清除錯誤訊息
+                // 使用 FileReader 將圖片轉為 Base64
+                Array.from(files).forEach(file => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        uploadedImages.push(e.target.result);
+                    };
+                    reader.readAsDataURL(file);
+                });
+            } else {
+                imageCount.textContent = '';
+            }
+        });
+
+        // 監聽開始按鈕點擊事件
+        startButton.addEventListener('click', () => {
+            // 驗證：是否上傳了圖片
+            if (uploadedImages.length === 0) {
+                errorMessage.textContent = '請先上傳至少一張圖片！';
+                return;
+            }
+            
+            // 驗證：動畫秒數與間隔秒數是否合理
+            const duration = parseFloat(durationInput.value);
+            const interval = parseFloat(intervalInput.value);
+            if (duration >= interval) {
+                errorMessage.textContent = '提示：動畫秒數建議小於圖片間隔秒數。';
+            } else {
+                 errorMessage.textContent = '';
+            }
+
+            startAnimation();
+        });
+
+        // 開始動畫的主要函式
+        function startAnimation() {
+            // 停止之前可能在運行的動畫
+            if (animationIntervalId) {
+                clearInterval(animationIntervalId);
+            }
+
+            // 隱藏預覽區的提示文字
+            placeholder.style.display = 'none';
+
+            // 獲取所有設定值
+            const title = titleInput.value;
+            const animationType = animationTypeSelect.value;
+            const duration = parseFloat(durationInput.value);
+            const interval = parseFloat(intervalInput.value);
+
+            // 設定動畫標題
+            animationTitle.textContent = title;
+            
+            let currentIndex = 0;
+
+            // 立即顯示第一張圖片
+            showNextImage();
+
+            // 設定計時器，循環播放圖片
+            animationIntervalId = setInterval(showNextImage, interval * 1000);
+
+            function showNextImage() {
+                if (uploadedImages.length === 0) return;
+
+                // 清空畫布
+                animationCanvas.innerHTML = '';
+                
+                // 建立新的圖片元素
+                const img = document.createElement('img');
+                img.src = uploadedImages[currentIndex];
+                
+                // 應用動畫 class 和持續時間
+                img.className = `anim-${animationType}`;
+                img.style.animationDuration = `${duration}s`;
+                
+                // 將圖片加入畫布
+                animationCanvas.appendChild(img);
+                
+                // 更新索引，實現循環播放
+                currentIndex = (currentIndex + 1) % uploadedImages.length;
+            }
+        }
+        
+        // --- 全螢幕功能 ---
+        fullscreenButton.addEventListener('click', () => {
+            // 檢查當前是否已在全螢幕模式
+            if (!document.fullscreenElement) {
+                // 進入全螢幕
+                previewPanel.requestFullscreen().catch(err => {
+                    alert(`無法進入全螢幕模式: ${err.message} (${err.name})`);
+                });
+            } else {
+                // 退出全螢幕
+                document.exitFullscreen();
+            }
+        });
+
+        // 監聽全螢幕狀態變化，以更新按鈕圖示
+        document.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement) {
+                // 進入全螢幕，顯示「退出」圖示
+                fullscreenIconOpen.classList.add('hidden');
+                fullscreenIconClose.classList.remove('hidden');
+            } else {
+                // 退出全螢幕，顯示「進入」圖示
+                fullscreenIconOpen.classList.remove('hidden');
+                fullscreenIconClose.classList.add('hidden');
+            }
+        });
+
+    </script>
+</body>
+</html>
