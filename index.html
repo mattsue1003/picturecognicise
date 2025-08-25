@@ -79,6 +79,18 @@
         #fullscreenButton:hover {
             background-color: rgba(0, 0, 0, 0.6);
         }
+
+        /* 手機版偽全螢幕樣式 */
+        .pseudo-fullscreen {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            z-index: 9998 !important; /* z-index 提高以覆蓋所有內容 */
+            border-radius: 0 !important; /* 移除圓角 */
+            padding: 0 !important; /* 移除內邊距 */
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-white flex items-center justify-center min-h-screen p-4">
@@ -297,43 +309,72 @@
             }
         }
         
-        // --- 全螢幕功能 (強化相容性) ---
+        // --- 全螢幕功能 (強化手機相容性) ---
+
+        // 檢查是否為 iOS 裝置
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
         function isFullScreen() {
-            return document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement;
+            // 檢查原生全螢幕狀態
+            return document.fullscreenElement || document.webkitFullscreenElement;
         }
 
+        function updateFullscreenIcons(isNowFullScreen) {
+            if (isNowFullScreen) {
+                fullscreenIconOpen.classList.add('hidden');
+                fullscreenIconClose.classList.remove('hidden');
+            } else {
+                fullscreenIconOpen.classList.remove('hidden');
+                fullscreenIconClose.classList.add('hidden');
+            }
+        }
+        
         function toggleFullScreen() {
-            if (!isFullScreen()) {
-                // 嘗試進入全螢幕
-                const requestMethod = previewPanel.requestFullscreen || previewPanel.webkitRequestFullscreen || previewPanel.mozRequestFullScreen || previewPanel.msRequestFullscreen;
-                if (requestMethod) {
-                    requestMethod.call(previewPanel).catch(err => {
-                        errorMessage.textContent = `無法進入全螢幕模式`;
-                    });
+            const isPseudoFullScreen = previewPanel.classList.contains('pseudo-fullscreen');
+
+            if (!isFullScreen() && !isPseudoFullScreen) {
+                // --- 進入全螢幕 ---
+                // 對於 iOS 裝置，優先使用偽全螢幕模式
+                if (isIOS) {
+                    previewPanel.classList.add('pseudo-fullscreen');
+                    updateFullscreenIcons(true);
+                } else {
+                    // 對於其他裝置，嘗試使用原生全螢幕 API
+                    const requestMethod = previewPanel.requestFullscreen || previewPanel.webkitRequestFullscreen;
+                    if (requestMethod) {
+                        requestMethod.call(previewPanel).catch(err => {
+                            // 如果原生 API 失敗，則退回使用偽全螢幕模式
+                            previewPanel.classList.add('pseudo-fullscreen');
+                            updateFullscreenIcons(true);
+                        });
+                    } else {
+                        // 如果瀏覽器完全不支援，也使用偽全螢幕
+                        previewPanel.classList.add('pseudo-fullscreen');
+                        updateFullscreenIcons(true);
+                    }
                 }
             } else {
-                // 嘗試退出全螢幕
-                const exitMethod = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
-                if (exitMethod) {
-                    exitMethod.call(document);
+                // --- 退出全螢幕 ---
+                // 如果是偽全螢幕模式，則移除 class
+                if (isPseudoFullScreen) {
+                    previewPanel.classList.remove('pseudo-fullscreen');
+                    updateFullscreenIcons(false);
+                } else {
+                    // 如果是原生全螢幕，則呼叫退出 API
+                    const exitMethod = document.exitFullscreen || document.webkitExitFullscreen;
+                    if (exitMethod) {
+                        exitMethod.call(document);
+                    }
                 }
             }
         }
 
         fullscreenButton.addEventListener('click', toggleFullScreen);
 
-        // 監聽全螢幕狀態變化，以更新按鈕圖示
-        ['fullscreenchange', 'webkitfullscreenchange', 'mozfullscreenchange', 'MSFullscreenChange'].forEach(event => {
+        // 監聽原生全螢幕狀態變化，以同步更新按鈕圖示
+        ['fullscreenchange', 'webkitfullscreenchange'].forEach(event => {
             document.addEventListener(event, () => {
-                if (isFullScreen()) {
-                    // 進入全螢幕，顯示「退出」圖示
-                    fullscreenIconOpen.classList.add('hidden');
-                    fullscreenIconClose.classList.remove('hidden');
-                } else {
-                    // 退出全螢幕，顯示「進入」圖示
-                    fullscreenIconOpen.classList.remove('hidden');
-                    fullscreenIconClose.classList.add('hidden');
-                }
+                updateFullscreenIcons(isFullScreen());
             });
         });
 
