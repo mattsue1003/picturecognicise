@@ -23,9 +23,10 @@
             0% { opacity: 1; }
             100% { opacity: 0; }
         }
+        /* 修正：讓淡入動畫平順地顯示並停留 */
         @keyframes fadeInOut {
-            0%, 100% { opacity: 0; transform: scale(0.95); }
-            50% { opacity: 1; transform: scale(1); }
+            0% { opacity: 0; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1); }
         }
         @keyframes slideInLeft {
             0% { transform: translateX(-100%); opacity: 0; }
@@ -149,23 +150,26 @@
             </select>
         </div>
 
-        <!-- 步驟三：上傳圖片 -->
+        <!-- 步驟三：播放順序 -->
         <div>
-            <label for="imageUpload" class="block text-sm font-medium text-gray-300 mb-1">3. 批次上傳圖片 (可多選)</label>
+            <label for="playbackOrder" class="block text-sm font-medium text-gray-300 mb-1">3. 播放順序</label>
+            <select id="playbackOrder" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
+                <option value="random">隨機播放</option>
+                <option value="sequential">順序播放</option>
+            </select>
+        </div>
+
+        <!-- 步驟四：上傳圖片 -->
+        <div>
+            <label for="imageUpload" class="block text-sm font-medium text-gray-300 mb-1">4. 批次上傳圖片 (可多選)</label>
             <input type="file" id="imageUpload" multiple accept="image/*" class="w-full text-sm text-gray-400 file:mr-4 file:border-0">
             <p id="imageCount" class="text-xs text-gray-500 mt-1 h-4"></p>
         </div>
         
-        <!-- 步驟四 & 五：時間設定 -->
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <label for="durationInput" class="block text-sm font-medium text-gray-300 mb-1">4. 動畫秒數</label>
-                <input type="number" id="durationInput" value="1.5" min="0.1" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
-            </div>
-             <div>
-                <label for="intervalInput" class="block text-sm font-medium text-gray-300 mb-1">5. 圖片間隔秒數</label>
-                <input type="number" id="intervalInput" value="2.5" min="0.1" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
-            </div>
+        <!-- 步驟五：時間設定 -->
+        <div>
+            <label for="intervalInput" class="block text-sm font-medium text-gray-300 mb-1">5. 每張圖片顯示秒數</label>
+            <input type="number" id="intervalInput" value="2.5" min="1.1" step="0.1" class="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 focus:ring-2 focus:ring-indigo-500 focus:outline-none transition">
         </div>
 
         <!-- 產生按鈕 -->
@@ -205,7 +209,7 @@
         const imageUpload = document.getElementById('imageUpload');
         const imageCount = document.getElementById('imageCount');
         const animationTypeSelect = document.getElementById('animationType');
-        const durationInput = document.getElementById('durationInput');
+        const playbackOrderSelect = document.getElementById('playbackOrder');
         const intervalInput = document.getElementById('intervalInput');
         const startButton = document.getElementById('startButton');
         const errorMessage = document.getElementById('errorMessage');
@@ -247,16 +251,7 @@
                 errorMessage.textContent = '請先上傳至少一張圖片！';
                 return;
             }
-            
-            // 驗證：動畫秒數與間隔秒數是否合理
-            const duration = parseFloat(durationInput.value);
-            const interval = parseFloat(intervalInput.value);
-            if (duration >= interval) {
-                errorMessage.textContent = '提示：動畫秒數建議小於圖片間隔秒數。';
-            } else {
-                 errorMessage.textContent = '';
-            }
-
+            errorMessage.textContent = ''; // 清除舊訊息
             startAnimation();
         });
 
@@ -273,7 +268,8 @@
             // 獲取所有設定值
             const title = titleInput.value;
             const animationType = animationTypeSelect.value;
-            const duration = parseFloat(durationInput.value);
+            const playbackOrder = playbackOrderSelect.value;
+            const duration = 1.0; // 將動畫秒數固定為 1 秒
             const interval = parseFloat(intervalInput.value);
 
             // 設定動畫標題
@@ -304,8 +300,12 @@
                 // 將圖片加入畫布
                 animationCanvas.appendChild(img);
                 
-                // 更新索引，實現循環播放
-                currentIndex = (currentIndex + 1) % uploadedImages.length;
+                // 根據播放順序更新索引
+                if (playbackOrder === 'sequential') {
+                    currentIndex = (currentIndex + 1) % uploadedImages.length;
+                } else { // 'random'
+                    currentIndex = Math.floor(Math.random() * uploadedImages.length);
+                }
             }
         }
         
@@ -381,3 +381,4 @@
     </script>
 </body>
 </html>
+```eof
